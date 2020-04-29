@@ -1,26 +1,45 @@
-https://github.com/tacemonster/traffic-playback.gitserver {
-	#Reverse proxy is going to listen to port 80 to handle http requests from clients.
-        listen		80;
+server {
+        #Reverse proxy is going to listen to port 80 to handle http requests from clients.
+        listen 80 default_server;
 
-	#Setup nginx as a reverse proxy to the website to be logged.
+        server_name localhost 127.0.0.1; #host name
+
+        #Redirect all http to https.
+        return 301 https://$server_name$request_uri;
+}
+
+#Setup secure connection through https
+server{
+        #Accepting secure connection
+        listen 443 ssl;
+        server_name localhost; #host name
+
+        ssl on; #ssl termination
+        ssl_certificate /etc/nginx/ssl/localhost.crth;   #public key
+        ssl_certificate_key /etc/nginx/ssl/localhost.key; #private key
+
+        #Setup nginx as a reverse proxy to the website to be logged.
         location / {
-		#Activate the nginx mirror plugin and send it to a unique uri.
+
                 mirror /tpt-mirror;
 
-		#Fixup the host header to mimic the client and provide the backend webserver with the client IP address.
+                #Fixup the host header to mimic the client and provide the backend webserver with the client IP address.
                 proxy_set_header Host $host;
                 proxy_set_header X-Real-IP $remote_addr;
 
-		#Send proxy traffic to the backend webserver
+                #Proxy secure connection
+                proxy_ssl_server_name on;
+
+                #Send proxy traffic to the backend webserver
                 proxy_pass http://127.0.0.1:8080/;
         }
 
-	#Location specified in the mirror directive.
+        #Location specified in the mirror directive
         location /tpt-mirror {
-		#Force this location to only respond to internal requests, being unavailable to access from cients.
+                #Force this location to only respond to internal requests, being unavailable to access from cients.
                 internal;
 
-		#Send needed variables from the request to the logging script via headers.
+                #Send needed variables from the request to the logging script via headers.
                 proxy_set_header tpt-ip $remote_addr;
                 proxy_set_header tpt-secure $https;
                 proxy_set_header tpt-proto $server_protocol;
@@ -28,8 +47,9 @@ https://github.com/tacemonster/traffic-playback.gitserver {
                 proxy_set_header tpt-uri $request_uri;
                 proxy_set_header tpt-method $request_method;
                 proxy_set_header tpt-requesttime $msec;
-		
-		#Send mirrored to request to the capture script.
-                proxy_pass http://127.0.0.1:8080/traffic_capture.php;
+
+                #Send mirrored to request to the capture script.
+                proxy_pass http://127.0.0.1:8080/capture.php;
         }
 }
+~
