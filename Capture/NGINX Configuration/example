@@ -1,4 +1,4 @@
-server {
+https://github.com/tacemonster/traffic-playback.gitserver {
 	#Reverse proxy is going to listen to port 80 to handle http requests from clients.
         listen		80;
 
